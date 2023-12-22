@@ -36,6 +36,13 @@ public class NetworkController : MonoBehaviour
         res = 0x04
     }
 
+    enum Commands
+    {
+        CLOSE = 0x01,
+        NEXT = 0x02,
+        PREV = 0x03
+    };
+
     private void Start()
     {
         foreach (GameObject obj in ConnectItems)
@@ -48,10 +55,37 @@ public class NetworkController : MonoBehaviour
             obj.SetActive(false);
         }
     }
+    public void Close()
+    {
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.CLOSE);
+        clientStream.Write(message, 0, message.Length);
+
+        clientStream.Close();
+        client.Close();
+
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+    }
+    public void NextCue()
+    {
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.NEXT);
+        clientStream.Write(message, 0, message.Length);
+    }
+    public void PrevCue()
+    {
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.PREV);
+        clientStream.Write(message, 0, message.Length);
+    }
 
     public void ConnectToServer()
     {
-        serverAddr = IPAddress.Parse(IP.text);
+        try
+        {
+            serverAddr = IPAddress.Parse(IP.text);
+        }
+        catch (Exception e)
+        {
+            ErrorText.text = "ERROR: INVALID IP: " + e.Message;
+        }
 
         if (serverAddr == null)
         {
