@@ -76,7 +76,7 @@ public class NetworkController : MonoBehaviour
         clientStream.Write(message, 0, message.Length);
     }
 
-    public void ConnectToServer()
+    public async void ConnectToServer()
     {
         try
         {
@@ -95,8 +95,15 @@ public class NetworkController : MonoBehaviour
 
         try
         {
-            client = new TcpClient(IP.text, int.Parse(Port.text));
-            clientStream = client.GetStream();
+            client = new TcpClient();
+            if (client.ConnectAsync(IP.text, int.Parse(Port.text)).Wait(1000))
+            {
+                clientStream = client.GetStream();
+            }
+            else
+            {
+                Debug.Log("Failed to connect to server!");
+            }
         }
         catch (Exception e)
         {
