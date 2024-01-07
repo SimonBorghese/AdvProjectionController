@@ -6,6 +6,14 @@ using UnityEngine;
 using TMPro;
 using System;
 
+/*
+ * 
+ *#define MAX_STRING_LENGTH 255
+#define MAX_MANAGERS 50
+#define MAX_EXTENDED_LENGTH 65535 
+ */
+
+
 public class NetworkController : MonoBehaviour
 {
     public TMP_InputField IP;
@@ -28,6 +36,12 @@ public class NetworkController : MonoBehaviour
     const string MAGIC_STRING = "furry\0";
     const string END_STRING = "yiff\0";
 
+    const int MAX_STRING_LENGTH = 255;
+    const int MAX_MANAGERS = 10;
+    const int MAX_EXTENDED_LENGTH = 65535;
+
+    const int OffsetToData = 6 + 1 + 2;
+
     enum PacketType
     {
         init = 0x01,
@@ -46,6 +60,13 @@ public class NetworkController : MonoBehaviour
         Get_Cue_Backup = 0x06
     };
 
+    struct Packet
+    {
+        public PacketType type;
+        public short DataLength;
+        public string Data;
+    }
+
     private void Start()
     {
         foreach (GameObject obj in ConnectItems)
@@ -58,6 +79,54 @@ public class NetworkController : MonoBehaviour
             obj.SetActive(false);
         }
     }
+
+    private Packet ReadPacket()
+    {
+        Packet packet = new Packet();
+
+        byte[] PacketData = new byte[MAX_EXTENDED_LENGTH + MAX_STRING_LENGTH];
+        if (!clientStream.ReadAsync(PacketData, 0, MAX_EXTENDED_LENGTH + MAX_STRING_LENGTH).Wait(1000))
+        {
+            Debug.Log("Failed to read packet");
+            return packet;
+        }
+
+        string magic_string = "";
+        PacketType packetType = PacketType.init;
+        short PacketLength = 0;
+        string StageData = "";
+        string end_string = "";
+
+        int currnetByte = 0;
+
+        for (int c = 0; c < MAGIC_LEN; c++)
+        {
+            magic_string += (char)PacketData[currnetByte++];
+        }
+        packetType = (PacketType)PacketData[currnetByte++];
+
+        PacketLength = BitConverter.ToInt16(PacketData, currnetByte);
+        currnetByte += 2;
+
+        for (int c = 0; c < PacketLength; c++)
+        {
+            StageData += (char)PacketData[currnetByte++];
+        }
+
+        for (int c = 0; c < MAGIC_LEN; c++)
+        {
+            end_string += (char)PacketData[currnetByte++];
+        }
+
+
+        packet.type = packetType;
+        packet.DataLength = PacketLength;
+        packet.Data = StageData;
+
+
+        return packet;
+    }
+
     public void Close()
     {
         byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.Close);
@@ -95,8 +164,25 @@ public class NetworkController : MonoBehaviour
     }
     public void PrevCue()
     {
-        //byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.PREV);
-        //clientStream.Write(message, 0, message.Length);
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.Get_Manager_Actions + "Cameras\0");
+        if (!clientStream.WriteAsync(message, 0, message.Length).Wait(1000))
+        {
+            Debug.Log("Failed to send data!");
+            return;
+        }
+
+        Packet managers = ReadPacket();
+        byte NumManagers = (byte) managers.Data[0];
+
+        string[] ManagerLists = new string[NumManagers];
+        for (int m = 0; m < NumManagers; m++)
+        {
+            for (int c = 0; c < MAX_STRING_LENGTH; c++)
+            {
+                ManagerLists[m] += managers.Data[(m * (MAX_STRING_LENGTH+1)) + c];
+            }
+            Debug.Log("Action: " + ManagerLists[m]);
+        }
     }
 
     public async void ConnectToServer()
