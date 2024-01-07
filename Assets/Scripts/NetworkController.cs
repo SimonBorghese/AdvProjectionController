@@ -38,9 +38,12 @@ public class NetworkController : MonoBehaviour
 
     enum Commands
     {
-        CLOSE = 0x01,
-        NEXT = 0x02,
-        PREV = 0x03
+        Close = 0x01,
+        Send_Action = 0x02,
+        Get_Managers = 0x03,
+        Get_Manager_Actions = 0x04,
+        Upload_Cue_Backup = 0x05,
+        Get_Cue_Backup = 0x06
     };
 
     private void Start()
@@ -57,7 +60,7 @@ public class NetworkController : MonoBehaviour
     }
     public void Close()
     {
-        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.CLOSE);
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.Close);
         clientStream.Write(message, 0, message.Length);
 
         clientStream.Close();
@@ -67,13 +70,33 @@ public class NetworkController : MonoBehaviour
     }
     public void NextCue()
     {
-        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.NEXT);
+        String ManagerName = "Cameras";
+        String ManagerAction = "RadioRoom";
+
+        char[] ManagerChars = new char[255];
+        ManagerName.CopyTo(0, ManagerChars, 0, ManagerName.Length);
+
+        char[] ActionChars = new char[255];
+        ManagerAction.CopyTo(0, ActionChars, 0, ManagerAction.Length);
+
+        String DataPacket = (char)Commands.Send_Action + "";
+        foreach (char c in ManagerChars)
+        {
+            DataPacket += c;
+        }
+        foreach (char c in ActionChars)
+        {
+            DataPacket += c;
+        }
+
+
+        byte[] message = packetCreator(PacketType.cmd, DataPacket);
         clientStream.Write(message, 0, message.Length);
     }
     public void PrevCue()
     {
-        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.PREV);
-        clientStream.Write(message, 0, message.Length);
+        //byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.PREV);
+        //clientStream.Write(message, 0, message.Length);
     }
 
     public async void ConnectToServer()
