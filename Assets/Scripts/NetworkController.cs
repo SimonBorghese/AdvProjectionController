@@ -20,6 +20,9 @@ public class NetworkController : MonoBehaviour
     public TMP_InputField Port;
     public TMP_Text ErrorText;
     public TMP_Text ShowName;
+    public TMP_Dropdown ManagerDropdown;
+    public TMP_Dropdown ActionDropdown;
+    
 
     public GameObject[] ConnectItems;
     public GameObject[] ControllerItems;
@@ -139,8 +142,8 @@ public class NetworkController : MonoBehaviour
     }
     public void NextCue()
     {
-        String ManagerName = "Cameras";
-        String ManagerAction = "RadioRoom";
+        String ManagerName = ManagerDropdown.options[ManagerDropdown.value].text;
+        String ManagerAction = ActionDropdown.options[ActionDropdown.value].text;
 
         char[] ManagerChars = new char[255];
         ManagerName.CopyTo(0, ManagerChars, 0, ManagerName.Length);
@@ -183,6 +186,58 @@ public class NetworkController : MonoBehaviour
             }
             Debug.Log("Action: " + ManagerLists[m]);
         }
+    }
+
+    public void GetManagers()
+    {
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.Get_Managers);
+        if (!clientStream.WriteAsync(message, 0, message.Length).Wait(1000))
+        {
+            Debug.Log("Failed to send data!");
+            return;
+        }
+
+        Packet managers = ReadPacket();
+        byte NumManagers = (byte)managers.Data[0];
+
+        string[] ManagerLists = new string[NumManagers];
+        List<TMP_Dropdown.OptionData> ManagersOptions = new List<TMP_Dropdown.OptionData> ();
+        for (int m = 0; m < NumManagers; m++)
+        {
+            for (int c = 0; c < MAX_STRING_LENGTH; c++)
+            {
+                ManagerLists[m] += managers.Data[((m * MAX_STRING_LENGTH) + c) + 1];
+            }
+            ManagersOptions.Add(new TMP_Dropdown.OptionData(ManagerLists[m]));
+        }
+        ManagerDropdown.ClearOptions();
+        ManagerDropdown.AddOptions(ManagersOptions);
+    }
+
+    public void GetActions()
+    {
+        byte[] message = packetCreator(PacketType.cmd, "" + (char)Commands.Get_Manager_Actions + ManagerDropdown.options[ManagerDropdown.value].text + "\0");
+        if (!clientStream.WriteAsync(message, 0, message.Length).Wait(1000))
+        {
+            Debug.Log("Failed to send data!");
+            return;
+        }
+
+        Packet managers = ReadPacket();
+        byte NumActions = (byte)managers.Data[0];
+
+        string[] ManagerLists = new string[NumActions];
+        List<TMP_Dropdown.OptionData> ActionOptions = new List<TMP_Dropdown.OptionData>();
+        for (int m = 0; m < NumActions; m++)
+        {
+            for (int c = 0; c < MAX_STRING_LENGTH; c++)
+            {
+                ManagerLists[m] += managers.Data[((m * MAX_STRING_LENGTH) + c)+1];
+            }
+            ActionOptions.Add(new TMP_Dropdown.OptionData(ManagerLists[m]));
+        }
+        ActionDropdown.ClearOptions();
+        ActionDropdown.AddOptions(ActionOptions);
     }
 
     public async void ConnectToServer()
