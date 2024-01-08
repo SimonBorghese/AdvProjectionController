@@ -60,7 +60,14 @@ public class NetworkController : MonoBehaviour
         Get_Managers = 0x03,
         Get_Manager_Actions = 0x04,
         Upload_Cue_Backup = 0x05,
-        Get_Cue_Backup = 0x06
+        Get_Cue_Backup = 0x06,
+        Send_RGB = 0x07
+    };
+
+    enum EActionTypes
+    {
+        Action = 0x01,
+        RGB_Control = 0x02
     };
 
     struct Packet
@@ -230,7 +237,8 @@ public class NetworkController : MonoBehaviour
         List<TMP_Dropdown.OptionData> ActionOptions = new List<TMP_Dropdown.OptionData>();
         for (int m = 0; m < NumActions; m++)
         {
-            for (int c = 0; c < MAX_STRING_LENGTH; c++)
+            Debug.Log("Got Action type: " + (uint) managers.Data[(m * MAX_STRING_LENGTH) + 1]);
+            for (int c = 1; c < MAX_STRING_LENGTH; c++)
             {
                 ManagerLists[m] += managers.Data[((m * MAX_STRING_LENGTH) + c)+1];
             }
