@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using UnityEditor.Sprites;
 using UnityEngine;
 
 public class NetManager : MonoBehaviour
@@ -55,19 +56,33 @@ public class NetManager : MonoBehaviour
     // Send Action Struct
     struct FSendAction
     {
-        char[] Manager; // MAX_STR_LEN
-        char[] Action; // MAX_STR_LEN
+        public string Manager; // MAX_STR_LEN
+        public string Action; // MAX_STR_LEN
 
         public override readonly string ToString()
         {
             string Out = "";
-            foreach (char c in Manager)
+            for (int c = 0; c < MAX_STRING_LENGTH; c++)
             {
-                Out += c;
+                if (c > Manager.Length)
+                {
+                    Out += '\0';
+                }
+                else
+                {
+                    Out += Manager[c];
+                }
             }
-            foreach (char c in Action)
+            for (int c = 0; c < MAX_STRING_LENGTH; c++)
             {
-                Out += c;
+                if (c > Action.Length)
+                {
+                    Out += '\0';
+                }
+                else
+                {
+                    Out += Action[c];
+                }
             }
 
             return Out;
@@ -77,20 +92,27 @@ public class NetManager : MonoBehaviour
     // Get Managers Result Struct
     struct FGetManagersResult
     {
-        ushort NumManagers;
-        char[][] Managers;
+        uint NumManagers;
+        string[] Managers;
 
-        public void FromString(string Data)
+        public void FromString(byte[] Data, int offset)
         {
-            NumManagers = BitConverter.ToUInt16(Encoding.ASCII.GetBytes(Data), 0);
+            NumManagers = Data[offset];
+            Managers = new string[NumManagers];
             for (int m = 0; m < NumManagers; m++)
             {
+                Managers[m] = "";
                 for (int c = 0; c < MAX_STRING_LENGTH; c++)
                 {
                     // Manager Offset + Current Character + Offset for short
-                    Managers[m][c] += Data[(MAX_STRING_LENGTH * m) + c + 2];
+                    Managers[m] += (char)Data[(MAX_STRING_LENGTH * m) + c + 1 + offset];
                 }
             }
+        }
+
+        public string[] ToStringArray()
+        {
+            return Managers;
         }
 	};
 
@@ -112,19 +134,27 @@ public class NetManager : MonoBehaviour
     // Get Manager Action Results
     struct FGetManagerActionsResult
     {
-        ushort NumActions;
-        char[][] Actions;
-        public void FromString(string Data)
+        uint NumActions;
+        string[] Actions;
+        public void FromString(byte[] Data, int offset)
         {
-            NumActions = BitConverter.ToUInt16(Encoding.ASCII.GetBytes(Data), 0);
+            NumActions = Data[offset];
+            Actions = new string[NumActions];
+            Debug.Log("Got Num Actions: " + NumActions);
             for (int m = 0; m < NumActions; m++)
             {
+                Actions[m] = "";
                 for (int c = 0; c < MAX_STRING_LENGTH; c++)
                 {
                     // Manager Offset + Current Character + Offset for short
-                    Actions[m][c] += Data[(MAX_STRING_LENGTH * m) + c + 2];
+                    Actions[m] += (char) Data[(MAX_STRING_LENGTH * m) + c + 1 + offset];
                 }
+                Debug.Log("got action: " + Actions[m]);
             }
+        }
+        public string[] ToStringArray()
+        {
+            return Actions;
         }
     };
 
@@ -218,6 +248,50 @@ public class NetManager : MonoBehaviour
         Packet ResPacket = RecvPacket(clientStream);
         return ResPacket.Data;
     }
+    
+    public string[] GetManagers()
+    {
+        Packet ManagerRequest = new Packet(PacketType.Cmd, 1, "" + (char) Commands.Get_Managers);
+        SendPacket(clientStream, ManagerRequest);
+
+        Packet Managers = RecvPacket(clientStream);
+        FGetManagersResult ManagerList = new FGetManagersResult();
+        ManagerList.FromString(Managers.ToBytes(), OffsetToData);
+        
+        return ManagerList.ToStringArray();
+    }
+
+    public string[] GetManagerActions(string Manager)
+    {
+        Packet ActionRequest = new Packet(PacketType.Cmd, (ushort) (Manager.Length + 1), "" + (char)Commands.Get_Manager_Actions + Manager);
+        SendPacket(clientStream, ActionRequest);
+
+        Packet ActionsPacket = RecvPacket(clientStream);
+        FGetManagerActionsResult ManagerResults = new FGetManagerActionsResult();
+        ManagerResults.FromString(ActionsPacket.ToBytes(), OffsetToData);
+
+        return ManagerResults.ToStringArray();
+    }
+
+    public void SendAction(string Manager, string Action)
+    {
+        FSendAction action = new FSendAction();
+        action.Manager = Manager;
+        action.Action = Action;
+
+        string ActionData = action.ToString();
+        Packet actionPacket = new Packet(PacketType.Cmd, (ushort) ActionData.Length, ActionData);
+        SendPacket(clientStream, actionPacket);
+    }
+
+    static void SendPacket(NetworkStream tcpClient, Packet packet)
+    {
+        byte[] PacketData = packet.ToBytes();
+        if (!tcpClient.WriteAsync(PacketData, 0, PacketData.Length).Wait(2000))
+        {
+            Debug.Log("Failed to send data!");
+        }
+    }
 
     static Packet RecvPacket(NetworkStream tcpClient)
     {
@@ -226,7 +300,7 @@ public class NetManager : MonoBehaviour
 
         byte[] RawPacketData = new byte[MAX_PACKET_SIZE];
 
-        if (tcpClient == null || !tcpClient.ReadAsync(RawPacketData, 0, MAX_PACKET_SIZE).Wait(1000))
+        if (tcpClient == null || !tcpClient.ReadAsync(RawPacketData, 0, MAX_PACKET_SIZE).Wait(5000))
         {
             Debug.Log("Failed to read packet!");
             return packet;
