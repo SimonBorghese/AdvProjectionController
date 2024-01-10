@@ -45,6 +45,16 @@ public class InterfaceManager : MonoBehaviour
         ManagerList.AddOptions(ListsManager);
     }
 
+    public void SendAction()
+    {
+        if (netManager != null)
+        {
+            string Manager = ManagerList.options[ManagerList.value].text;
+            string Action = ActionList.options[ActionList.value].text;
+            netManager.SendAction(Manager, Action);
+        }
+    }
+
     public void OnManagerChanged(int change)
     {
         string CurrentManager = ManagerList.options[ManagerList.value].text;

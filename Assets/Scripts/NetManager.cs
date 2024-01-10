@@ -280,7 +280,7 @@ public class NetManager : MonoBehaviour
         action.Action = Action;
 
         string ActionData = action.ToString();
-        Packet actionPacket = new Packet(PacketType.Cmd, (ushort) ActionData.Length, ActionData);
+        Packet actionPacket = new Packet(PacketType.Cmd, (ushort) ActionData.Length, "" + (char)Commands.Send_Action + ActionData);
         SendPacket(clientStream, actionPacket);
     }
 
