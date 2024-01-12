@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using UnityEditor.Sprites;
 using UnityEngine;
 
 public class NetManager : MonoBehaviour
