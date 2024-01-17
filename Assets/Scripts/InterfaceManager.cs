@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class InterfaceManager : MonoBehaviour
 {
@@ -19,6 +20,9 @@ public class InterfaceManager : MonoBehaviour
     // Action Screen
     public TMP_Dropdown ManagerList;
     public TMP_Dropdown ActionList;
+
+    // Manager Action Map
+    public Dictionary<string, List<string>> ManagerActions;
 
     public void StartConnection()
     {
@@ -38,9 +42,17 @@ public class InterfaceManager : MonoBehaviour
         // Setup the Manager List
         string[] Managers = netManager.GetManagers();
         List<string> ListsManager = new List<string>();
+        ManagerActions = new Dictionary<string, List<string>>();
         foreach (string manager in Managers)
         {
             ListsManager.Add(manager);
+            string[] actions = netManager.GetManagerActions(manager);
+            List<string> ActionList = new List<string>();
+            foreach (string action in actions)
+            {
+                ActionList.Add(action);
+            }
+            ManagerActions.Add(manager, new List<string>(ActionList));
         }
         ManagerList.AddOptions(ListsManager);
     }
@@ -61,14 +73,13 @@ public class InterfaceManager : MonoBehaviour
         if (!string.IsNullOrEmpty(CurrentManager))
         {
             ActionList.ClearOptions();
-            string[] actions = netManager.GetManagerActions(CurrentManager);
-            List<string> ListsManager = new List<string>();
-            foreach (string manager in actions)
-            {
-                ListsManager.Add(manager);
-            }
-            ActionList.AddOptions(ListsManager);
+            ActionList.AddOptions(ManagerActions[CurrentManager]);
         }
+    }
+
+    public void ResetGame()
+    {
+        SceneManager.LoadScene(0);
     }
     // Start is called before the first frame update
     void Start()
