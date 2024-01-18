@@ -20,9 +20,12 @@ public class InterfaceManager : MonoBehaviour
     // Action Screen
     public TMP_Dropdown ManagerList;
     public TMP_Dropdown ActionList;
+    public TMP_Dropdown EffectActionList;
 
     // Manager Action Map
-    public Dictionary<string, List<string>> ManagerActions;
+    // Dictionary:
+    // [Manager : List of Effects : [Effect Name, List of Effect Actions]]
+    public Dictionary<string, Dictionary<string,List<string>>> ManagerActions;
 
     public void StartConnection()
     {
@@ -42,17 +45,24 @@ public class InterfaceManager : MonoBehaviour
         // Setup the Manager List
         string[] Managers = netManager.GetManagers();
         List<string> ListsManager = new List<string>();
-        ManagerActions = new Dictionary<string, List<string>>();
+        ManagerActions = new Dictionary<string, Dictionary<string, List<string>>>();
         foreach (string manager in Managers)
         {
             ListsManager.Add(manager);
             string[] actions = netManager.GetManagerActions(manager);
-            List<string> ActionList = new List<string>();
+            Dictionary<string, List<string>> ActionList = new Dictionary<string, List<string>>();
             foreach (string action in actions)
             {
-                ActionList.Add(action);
+                List<string> EffectActions = new List<string>();
+                Debug.Log("For Action " + action + " Got Actions: ");
+                foreach (string action2 in netManager.GetEffectActions(manager, action))
+                {
+                    Debug.Log(action2);
+                    EffectActions.Add(action2);
+                }
+                ActionList.Add(action, EffectActions);
             }
-            ManagerActions.Add(manager, new List<string>(ActionList));
+            ManagerActions.Add(manager, new Dictionary<string, List<string>>(ActionList));
         }
         ManagerList.AddOptions(ListsManager);
     }
@@ -63,7 +73,31 @@ public class InterfaceManager : MonoBehaviour
         {
             string Manager = ManagerList.options[ManagerList.value].text;
             string Action = ActionList.options[ActionList.value].text;
-            netManager.SendAction(Manager, Action);
+
+            string EffectAction = "";
+            if (EffectActionList.options.Count > 0)
+            {
+                EffectAction = EffectActionList.options[EffectActionList.value].text;
+            }
+
+            string Message = "";
+            foreach (char a in Action)
+            {
+                if (a == '\0')
+                {
+                    break;
+                }
+                Message += a;
+            }
+            Message += '>';
+            foreach (char a in EffectAction)
+            {
+                Message += a;
+            }
+            Message += '\0';
+
+            Debug.Log("Message: " + Message);
+            netManager.SendAction(Manager, Message);
         }
     }
 
@@ -73,7 +107,23 @@ public class InterfaceManager : MonoBehaviour
         if (!string.IsNullOrEmpty(CurrentManager))
         {
             ActionList.ClearOptions();
-            ActionList.AddOptions(ManagerActions[CurrentManager]);
+            List<string> Effects = new List<string>();
+            foreach (var Effect in ManagerActions[CurrentManager].Keys)
+            {
+                Effects.Add(Effect);
+            }
+            ActionList.AddOptions(Effects);
+        }
+    }
+
+    public void OnEffectChanged(int change)
+    {
+        string CurrentManager = ManagerList.options[ManagerList.value].text;
+        string CurrentEffect = ActionList.options[ActionList.value].text;
+        if (!string.IsNullOrEmpty(CurrentManager))
+        {
+            EffectActionList.ClearOptions();
+            EffectActionList.AddOptions(ManagerActions[CurrentManager][CurrentEffect]);
         }
     }
 

@@ -43,7 +43,7 @@ public class NetManager : MonoBehaviour
         Get_Manager_Actions = 0x04,
         Upload_Cue_Backup = 0x05,
         Get_Cue_Backup = 0x06,
-        Send_RGB = 0x07
+        Get_Effect_Actions = 0x07
     };
 
     enum EActionTypes
@@ -53,6 +53,7 @@ public class NetManager : MonoBehaviour
     };
 
     // Send Action Struct
+    // CAN ALSO BE USED FOR GetEffectActions
     struct FSendAction
     {
         public string Manager; // MAX_STR_LEN
@@ -80,6 +81,10 @@ public class NetManager : MonoBehaviour
                 }
                 else
                 {
+                    //if (Action[c] == '\0')
+                    //{
+                    //    break;
+                    //}
                     Out += Action[c];
                 }
             }
@@ -89,6 +94,7 @@ public class NetManager : MonoBehaviour
     };
 
     // Get Managers Result Struct
+    // Can also be used for Get Effect Actions
     struct FGetManagersResult
     {
         uint NumManagers;
@@ -148,7 +154,6 @@ public class NetManager : MonoBehaviour
                     // Manager Offset + Current Character + Offset for short
                     Actions[m] += (char) Data[(MAX_STRING_LENGTH * m) + c + 1 + offset];
                 }
-                Debug.Log("got action: " + Actions[m]);
             }
         }
         public string[] ToStringArray()
@@ -270,6 +275,23 @@ public class NetManager : MonoBehaviour
         ManagerResults.FromString(ActionsPacket.ToBytes(), OffsetToData);
 
         return ManagerResults.ToStringArray();
+    }
+
+    public string[] GetEffectActions(string Manager, string Effect)
+    {
+        FSendAction EffectRequest = new FSendAction();
+        EffectRequest.Manager = Manager;
+        EffectRequest.Action = Effect;
+
+        string ActionData = EffectRequest.ToString();
+        Packet ActionPacket = new Packet(PacketType.Cmd, (ushort)ActionData.Length, "" + (char)Commands.Get_Effect_Actions + ActionData);
+        SendPacket(clientStream, ActionPacket);
+
+        Packet EffectActionsResponse = RecvPacket(clientStream);
+        FGetManagerActionsResult EffectResults = new FGetManagerActionsResult();
+        EffectResults.FromString(EffectActionsResponse.ToBytes(), OffsetToData);
+
+        return EffectResults.ToStringArray();
     }
 
     public void SendAction(string Manager, string Action)
