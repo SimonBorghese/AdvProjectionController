@@ -75,7 +75,7 @@ public class NetManager : MonoBehaviour
             }
             for (int c = 0; c < MAX_STRING_LENGTH; c++)
             {
-                if (c > Action.Length)
+                if (c >= Action.Length)
                 {
                     Out += '\0';
                 }
