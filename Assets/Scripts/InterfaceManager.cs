@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 public class InterfaceManager : MonoBehaviour
 {
     public NetManager netManager;
+    public ShowManager showManager;
+
+    public TMP_Text ErrorText;
 
     // Connection Screen
     public TMP_InputField IPField;
@@ -18,22 +21,23 @@ public class InterfaceManager : MonoBehaviour
     public TMP_Text ShowTitle;
 
     // Action Screen
+    public GameObject ActionMenu;
+    public GameObject CueMenu;
+
+    // Action Screen
     public TMP_Dropdown ManagerList;
     public TMP_Dropdown ActionList;
     public TMP_Dropdown EffectActionList;
 
-    // Manager Action Map
-    // Dictionary:
-    // [Manager : List of Effects : [Effect Name, List of Effect Actions]]
-    public Dictionary<string, Dictionary<string,List<string>>> ManagerActions;
 
     public void StartConnection()
     {
-        string ShowName = netManager.ConnectToServer(IPField.text, int.Parse(PortField.text));
+
+        string ShowName = showManager.ConnectToRenderer(IPField.text, int.Parse(PortField.text));
 
         if (ShowName.StartsWith("Error:"))
         {
-            Debug.Log("Failed to connect to server!");
+            ErrorText.text = ShowName;
             return;
         }
 
@@ -42,34 +46,13 @@ public class InterfaceManager : MonoBehaviour
 
         ShowTitle.text = ShowName;
 
-        // Setup the Manager List
-        string[] Managers = netManager.GetManagers();
-        List<string> ListsManager = new List<string>();
-        ManagerActions = new Dictionary<string, Dictionary<string, List<string>>>();
-        foreach (string manager in Managers)
-        {
-            ListsManager.Add(manager);
-            string[] actions = netManager.GetManagerActions(manager);
-            Dictionary<string, List<string>> ActionList = new Dictionary<string, List<string>>();
-            foreach (string action in actions)
-            {
-                List<string> EffectActions = new List<string>();
-                Debug.Log("For Action " + action + " Got Actions: ");
-                foreach (string action2 in netManager.GetEffectActions(manager, action))
-                {
-                    Debug.Log(action2);
-                    EffectActions.Add(action2);
-                }
-                ActionList.Add(action, EffectActions);
-            }
-            ManagerActions.Add(manager, new Dictionary<string, List<string>>(ActionList));
-        }
-        ManagerList.AddOptions(ListsManager);
+        List<string> Managers = showManager.GetManagers();
+        ManagerList.AddOptions(Managers);
     }
 
     public void SendAction()
     {
-        if (netManager != null)
+        if (netManager != null && showManager != null)
         {
             string Manager = ManagerList.options[ManagerList.value].text;
             string Action = ActionList.options[ActionList.value].text;
@@ -80,24 +63,7 @@ public class InterfaceManager : MonoBehaviour
                 EffectAction = EffectActionList.options[EffectActionList.value].text;
             }
 
-            string Message = "";
-            foreach (char a in Action)
-            {
-                if (a == '\0')
-                {
-                    break;
-                }
-                Message += a;
-            }
-            Message += '>';
-            foreach (char a in EffectAction)
-            {
-                Message += a;
-            }
-            Message += '\0';
-
-            Debug.Log("Message: " + Message);
-            netManager.SendAction(Manager, Message);
+            showManager.SendAction(Manager, Action, EffectAction);
         }
     }
 
@@ -108,7 +74,7 @@ public class InterfaceManager : MonoBehaviour
         {
             ActionList.ClearOptions();
             List<string> Effects = new List<string>();
-            foreach (var Effect in ManagerActions[CurrentManager].Keys)
+            foreach (var Effect in showManager.GetManagerEffects(CurrentManager))
             {
                 Effects.Add(Effect);
             }
@@ -123,7 +89,12 @@ public class InterfaceManager : MonoBehaviour
         if (!string.IsNullOrEmpty(CurrentManager))
         {
             EffectActionList.ClearOptions();
-            EffectActionList.AddOptions(ManagerActions[CurrentManager][CurrentEffect]);
+            List<string> Effects = new List<string>();
+            foreach (var Effect in showManager.GetEffectActions(CurrentManager, CurrentEffect))
+            {
+                Effects.Add(Effect);
+            }
+            EffectActionList.AddOptions(Effects);
         }
     }
 
@@ -131,11 +102,25 @@ public class InterfaceManager : MonoBehaviour
     {
         SceneManager.LoadScene(0);
     }
+
+    public void ShowActionMenu()
+    {
+        CueMenu.SetActive(false);
+        ActionMenu.SetActive(true);
+    }
+
+    public void ShowCueMenu()
+    {
+        CueMenu.SetActive(true);
+        ActionMenu.SetActive(false);
+    }
     // Start is called before the first frame update
     void Start()
     {
         ActionPanel.SetActive(false);
         ConnectionPanel.SetActive(true);
+        ActionMenu.SetActive(true);
+        CueMenu.SetActive(false);
     }
 
     // Update is called once per frame
