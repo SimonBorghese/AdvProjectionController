@@ -42,6 +42,11 @@ public class ShowManager : MonoBehaviour
 
         return ShowName;
     }
+
+    public bool ConnectedToServer()
+    {
+        return RenderServer != null;
+    }
     
     public List<string> GetManagers()
     {

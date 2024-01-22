@@ -29,6 +29,8 @@ public class InterfaceManager : MonoBehaviour
     public TMP_Dropdown ActionList;
     public TMP_Dropdown EffectActionList;
 
+    public bool DebugMode;
+
 
     public void StartConnection()
     {
@@ -117,10 +119,13 @@ public class InterfaceManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        ActionPanel.SetActive(false);
-        ConnectionPanel.SetActive(true);
-        ActionMenu.SetActive(true);
-        CueMenu.SetActive(false);
+        if (!DebugMode)
+        {
+            ActionPanel.SetActive(false);
+            ConnectionPanel.SetActive(true);
+            ActionMenu.SetActive(true);
+            CueMenu.SetActive(false);
+        }
     }
 
     // Update is called once per frame
