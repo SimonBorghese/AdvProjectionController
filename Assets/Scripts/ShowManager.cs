@@ -7,9 +7,11 @@ public class ShowManager : MonoBehaviour
     public NetManager RenderServer;
 
     public Dictionary<string, Manager> SceneManagers;
+
+    public string ShowName;
     public string ConnectToRenderer(string Ip, int port)
     {
-        string ShowName = RenderServer.ConnectToServer(Ip, port);
+        ShowName = RenderServer.ConnectToServer(Ip, port);
 
         if (ShowName.StartsWith("Error:"))
         {

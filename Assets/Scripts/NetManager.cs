@@ -70,7 +70,14 @@ public class NetManager : MonoBehaviour
                 }
                 else
                 {
-                    Out += Manager[c];
+                    try
+                    {
+                        Out += Manager[c];
+                    }
+                    catch (Exception e)
+                    {
+                        Out += ' ';
+                    }
                 }
             }
             for (int c = 0; c < MAX_STRING_LENGTH; c++)
@@ -85,7 +92,14 @@ public class NetManager : MonoBehaviour
                     //{
                     //    break;
                     //}
-                    Out += Action[c];
+                    try
+                    {
+                        Out += Action[c];
+                    }
+                    catch (Exception e)
+                    {
+                        Out += ' ';
+                    }
                 }
             }
 
