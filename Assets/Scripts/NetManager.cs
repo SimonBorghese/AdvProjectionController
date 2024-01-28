@@ -72,11 +72,18 @@ public class NetManager : MonoBehaviour
                 {
                     try
                     {
-                        Out += Manager[c];
+                        if (Manager[c] != '\n')
+                        {
+                            Out += Manager[c];
+                        }
+                        else
+                        {
+                            Out += ' ';
+                        }
                     }
                     catch (Exception e)
                     {
-                        Out += ' ';
+                        Out += '\0';
                     }
                 }
             }
@@ -94,11 +101,18 @@ public class NetManager : MonoBehaviour
                     //}
                     try
                     {
-                        Out += Action[c];
+                        if (Action[c] != '\n')
+                        {
+                            Out += Action[c];
+                        }
+                        else
+                        {
+                            Out += ' ';
+                        }
                     }
                     catch (Exception e)
                     {
-                        Out += ' ';
+                        Out += '\0';
                     }
                 }
             }
