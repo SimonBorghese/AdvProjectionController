@@ -104,6 +104,11 @@ public class ShowManager : MonoBehaviour
         RenderServer.SendAction(Manager, Message);
     }
 
+    public void ToggleBlackout()
+    {
+        SendAction("Effects", "Blackout Manager", "1-Toggle");
+    }
+
     // Start is called before the first frame update
     void Start()
     {

@@ -173,7 +173,7 @@ public class NetManager : MonoBehaviour
         {
             NumActions = Data[offset];
             Actions = new string[NumActions];
-            Debug.Log("Got Num Actions: " + NumActions);
+            Debug.Log("Got Num Manager Actions: " + NumActions);
             for (int m = 0; m < NumActions; m++)
             {
                 Actions[m] = "";
@@ -349,7 +349,7 @@ public class NetManager : MonoBehaviour
 
         byte[] RawPacketData = new byte[MAX_PACKET_SIZE];
 
-        if (tcpClient == null || !tcpClient.ReadAsync(RawPacketData, 0, MAX_PACKET_SIZE).Wait(5000))
+        if (tcpClient == null || !tcpClient.ReadAsync(RawPacketData, 0, MAX_PACKET_SIZE).Wait(500))
         {
             Debug.Log("Failed to read packet!");
             return packet;
@@ -364,8 +364,8 @@ public class NetManager : MonoBehaviour
 
         if (!packet.MagicString.StartsWith(MAGIC_STRING_CHECK))
         {
-            Debug.Log("INVALID MAGIC STRING: " + packet.MagicString);
-            return packet;
+            Debug.Log("INVALID MAGIC STRING: " + RawPacketData);
+            //return packet;
         }
 
         // Read the type and data length from the packet
